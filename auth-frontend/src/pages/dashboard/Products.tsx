@@ -1,10 +1,12 @@
 ﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
+import vesselImg from '../../assets/Background+Border.png';
+import linenImg from '../../assets/Linen Throw.png';
 
 const products = [
-  { id: 1, name: 'Alabaster Vessel No. 4', sku: 'ALB-004-WHT', image: 'https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=100&h=100&fit=crop', status: 'In Stock', stock: 12, badge: 'PUBLIC', dotColor: 'bg-green-500', price: '$245.00' },
-  { id: 2, name: 'Woven Linen Throw - Sand', sku: 'LNN-THW-SND', image: 'https://images.unsplash.com/photo-1631125915902-d8abe9225ff2?w=100&h=100&fit=crop', status: 'Low Stock', stock: 2, badge: 'PUBLIC', dotColor: 'bg-yellow-500', price: '$180.00' },
+  { id: 1, name: 'Alabaster Vessel No. 4', sku: 'ALB-004-WHT', image: vesselImg, status: 'In Stock', stock: 12, badge: 'PUBLIC', dotColor: 'bg-green-500', price: '$245.00' },
+  { id: 2, name: 'Woven Linen Throw - Sand', sku: 'LNN-THW-SND', image: linenImg, status: 'Low Stock', stock: 2, badge: 'PUBLIC', dotColor: 'bg-yellow-500', price: '$180.00' },
   { id: 3, name: 'Oak Dining Chair', sku: 'OAK-CHR-01', image: null, status: 'Draft', stock: null, badge: 'HIDDEN', dotColor: 'bg-gray-400', price: '--' },
 ];
 

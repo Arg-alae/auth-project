@@ -1,5 +1,6 @@
 ﻿import { Link, useLocation } from 'react-router-dom';
 import logo from '../../assets/logo_morazon.png';
+import adminImg from '../../assets/Morazon Admin Profile.png';
 
 const menuItems = [
   { label: 'Dashboard', path: '/dashboard', icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>' },
@@ -12,28 +13,56 @@ const menuItems = [
 
 export default function Sidebar() {
   const location = useLocation();
+
   return (
     <div className="w-[180px] min-h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 bottom-0 z-20">
+
+      {/* LOGO */}
       <div className="px-5 py-5 border-b border-gray-100">
         <img src={logo} alt="Morazon" className="h-5 mb-1" />
         <p className="text-[10px] text-gray-400 tracking-wide mt-1">Artisanal Admin</p>
       </div>
+
+      {/* MENU */}
       <nav className="flex-1 py-3">
         {menuItems.map((item) => {
-          const isActive = location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+          const isActive = location.pathname === item.path ||
+            (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+
           return (
-            <Link key={item.path} to={item.path} className={'flex items-center gap-3 px-5 py-2.5 text-sm transition-all relative ' + (isActive ? 'text-[#8B2635] font-medium bg-red-50' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50')}>
-              {isActive && <div className="absolute right-0 top-0 bottom-0 w-[3px] bg-[#8B2635] rounded-l" />}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" dangerouslySetInnerHTML={{__html: item.icon}} />
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex items-center gap-3 px-5 py-2.5 text-sm transition-all relative ${
+                isActive
+                  ? 'text-[#8B2635] font-medium bg-red-50'
+                  : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              {isActive && (
+                <div className="absolute right-0 top-0 bottom-0 w-[3px] bg-[#8B2635] rounded-l" />
+              )}
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                dangerouslySetInnerHTML={{ __html: item.icon }}
+              />
               <span>{item.label}</span>
             </Link>
           );
         })}
       </nav>
+
+      {/* ADMIN USER */}
       <div className="px-5 py-4 border-t border-gray-100 flex items-center gap-3">
-        <img src="https://i.pravatar.cc/32" alt="Admin" className="w-8 h-8 rounded-full object-cover" />
+        <img src={adminImg} alt="Admin" className="w-8 h-8 rounded-full object-cover" />
         <span className="text-sm text-gray-700 font-medium">Admin User</span>
       </div>
+
     </div>
   );
 }

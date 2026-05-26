@@ -1,107 +1,362 @@
-﻿import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+﻿import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
+import { createProduct, getProduct, updateProduct } from '../../services/productApi';
+import toast from 'react-hot-toast';
 
 export default function AddProduct() {
   const navigate = useNavigate();
-  const [status, setStatus] = useState('Active');
+  const { id } = useParams();
+  const isEdit = !!id;
+
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(isEdit);
+  const [status, setStatus] = useState('draft');
+  const [isActive, setIsActive] = useState(false);
   const [name, setName] = useState('');
   const [shortDesc, setShortDesc] = useState('');
   const [fullDesc, setFullDesc] = useState('');
   const [price, setPrice] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [localImages, setLocalImages] = useState<string[]>([]);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [sku, setSku] = useState('');
+  const [stock, setStock] = useState('0');
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState('');
+  const [weight, setWeight] = useState('0.0');
   const [pageTitle, setPageTitle] = useState('');
   const [metaDesc, setMetaDesc] = useState('');
-  const [weight, setWeight] = useState('0.0');
+
+  useEffect(() => {
+    if (!isEdit) return;
+    const fetchProduct = async () => {
+      try {
+        const product = await getProduct(Number(id));
+        setName(product.title);
+        setShortDesc(product.description);
+        setPrice(product.price?.toString() || '');
+        setLocalImages(product.images || []);
+        setSku(product.sku || '');
+        setStock(product.stock?.toString() || '0');
+        setStatus(product.status);
+        setIsActive(product.isActive);
+        setCategory(product.category || '');
+        setTags(product.tags?.join(', ') || '');
+        setWeight(product.weight?.toString() || '0.0');
+      } catch (error) {
+        toast.error('Failed to load product');
+        navigate('/dashboard/products');
+      } finally {
+        setFetching(false);
+      }
+    };
+    fetchProduct();
+  }, [id]);
+
+  const handleSubmit = async (submitStatus: string) => {
+    if (!name || !shortDesc) {
+      toast.error('Please fill in the required fields');
+      return;
+    }
+    try {
+      setLoading(true);
+      const data = {
+        title: name,
+        description: shortDesc || fullDesc,
+        price: price ? parseFloat(price) : undefined,
+        imageUrl: localImages[0] || undefined,
+        images: localImages,
+        sku: sku || undefined,
+        stock: stock ? parseInt(stock) : 0,
+        status: submitStatus,
+        isActive: submitStatus === 'published',
+        category: category || undefined,
+        tags: tags ? tags.split(',').map(t => t.trim()) : [],
+        weight: weight ? parseFloat(weight) : undefined,
+      };
+
+      if (isEdit) {
+        await updateProduct(Number(id), data);
+        toast.success('Product updated successfully!');
+      } else {
+        await createProduct(data);
+        toast.success(submitStatus === 'published' ? 'Product published!' : 'Product saved as draft!');
+      }
+      navigate('/dashboard/products');
+    } catch (error) {
+      toast.error(isEdit ? 'Failed to update product' : 'Failed to save product');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (fetching) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-400 text-sm">Loading product...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
+
+      {/* BREADCRUMB */}
       <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
         <span className="hover:text-gray-600 cursor-pointer" onClick={() => navigate('/dashboard')}>Dashboard</span>
         <span>/</span>
         <span className="hover:text-gray-600 cursor-pointer" onClick={() => navigate('/dashboard/products')}>Products</span>
         <span>/</span>
-        <span className="text-gray-600">Add Product</span>
+        <span className="text-gray-600">{isEdit ? 'Edit Product' : 'Add Product'}</span>
       </div>
+
+      {/* HEADER */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Add Product</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">
+          {isEdit ? 'Edit Product' : 'Add Product'}
+        </h1>
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/dashboard/products')} className="text-sm text-gray-500 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 cursor-pointer">Discard</button>
-          <button className="text-sm text-gray-600 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 cursor-pointer">Save Draft</button>
-          <button className="text-sm text-white bg-[#8B2635] px-4 py-2 rounded-md hover:bg-[#7a1f2d] cursor-pointer">Publish Product</button>
+          <button
+            onClick={() => navigate('/dashboard/products')}
+            className="text-sm text-gray-500 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 cursor-pointer"
+            disabled={loading}
+          >
+            Discard
+          </button>
+          <button
+            onClick={() => handleSubmit('draft')}
+            className="text-sm text-gray-600 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 cursor-pointer"
+            disabled={loading}
+          >
+            {loading ? 'Saving...' : 'Save Draft'}
+          </button>
+          <button
+            onClick={() => handleSubmit('published')}
+            className="text-sm text-white bg-[#8B2635] px-4 py-2 rounded-md hover:bg-[#7a1f2d] cursor-pointer"
+            disabled={loading}
+          >
+            {loading ? 'Saving...' : isEdit ? 'Update Product' : 'Publish Product'}
+          </button>
         </div>
       </div>
+
+      {/* CONTENT */}
       <div className="flex gap-6">
+
+        {/* LEFT COLUMN */}
         <div className="flex-1 flex flex-col gap-5">
+
+          {/* INFORMATION */}
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-5">Information</h2>
+
             <div className="mb-4">
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Product Name</label>
-              <input type="text" placeholder="e.g. Minimalist Ceramic Vase" value={name} onChange={e => setName(e.target.value)} className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400 placeholder:text-gray-300" />
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Product Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Minimalist Ceramic Vase"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400 placeholder:text-gray-300"
+              />
             </div>
+
             <div className="mb-4">
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Short Description</label>
-              <textarea placeholder="Brief summary of the product..." value={shortDesc} onChange={e => setShortDesc(e.target.value)} rows={3} className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400 placeholder:text-gray-300 resize-none" />
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Short Description <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                placeholder="Brief summary of the product..."
+                value={shortDesc}
+                onChange={e => setShortDesc(e.target.value)}
+                rows={3}
+                className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400 placeholder:text-gray-300 resize-none"
+              />
             </div>
+
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Full Description</label>
               <div className="flex items-center gap-2 border border-gray-200 rounded-t-md px-3 py-2 bg-gray-50 border-b-0">
                 {['B', 'I', 'U', 'S'].map(btn => (
-                  <button key={btn} className="w-6 h-6 flex items-center justify-center text-sm text-gray-500 hover:bg-gray-200 rounded cursor-pointer">{btn}</button>
+                  <button key={btn} className="w-6 h-6 flex items-center justify-center text-sm text-gray-500 hover:bg-gray-200 rounded cursor-pointer font-medium">
+                    {btn}
+                  </button>
                 ))}
               </div>
-              <textarea placeholder="Detailed product narrative..." value={fullDesc} onChange={e => setFullDesc(e.target.value)} rows={6} className="w-full border border-gray-200 rounded-b-md px-3 py-2 text-sm outline-none focus:border-gray-400 placeholder:text-gray-300 resize-none" />
+              <textarea
+                placeholder="Detailed product narrative..."
+                value={fullDesc}
+                onChange={e => setFullDesc(e.target.value)}
+                rows={6}
+                className="w-full border border-gray-200 rounded-b-md px-3 py-2 text-sm outline-none focus:border-gray-400 placeholder:text-gray-300 resize-none"
+              />
             </div>
           </div>
+
+          {/* MEDIA */}
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-base font-semibold text-gray-900">Media</h2>
-              <button className="text-xs text-[#8B2635] hover:underline cursor-pointer">Add URL</button>
+              <button
+                onClick={() => setShowUrlInput(!showUrlInput)}
+                className="text-xs text-[#8B2635] hover:underline cursor-pointer"
+              >
+                Add URL
+              </button>
             </div>
-            <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center mb-4 hover:border-gray-300 cursor-pointer">
+
+            <div
+              className="border border-dashed border-gray-200 rounded-lg p-8 text-center mb-4 hover:border-gray-300 transition-colors cursor-pointer bg-gray-50"
+              onClick={() => document.getElementById('file-upload')?.click()}
+            >
+              <input
+                id="file-upload"
+                type="file"
+                multiple
+                accept="image/*"
+                className="hidden"
+                onChange={e => {
+                  const files = Array.from(e.target.files || []);
+                  files.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      setLocalImages(prev => [...prev, ev.target?.result as string]);
+                    };
+                    reader.readAsDataURL(file);
+                  });
+                }}
+              />
               <div className="flex justify-center mb-3">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
               </div>
               <p className="text-sm text-gray-500 mb-1">Click to upload or drag and drop</p>
               <p className="text-xs text-gray-400">SVG, PNG, JPG or GIF (max. 10MB)</p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-16 h-16 rounded-md bg-gray-100 overflow-hidden">
-                <img src="https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=100&h=100&fit=crop" alt="product" className="w-full h-full object-cover" />
+
+            {showUrlInput && (
+              <div className="mb-4">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="https://..."
+                    value={imageUrl}
+                    onChange={e => setImageUrl(e.target.value)}
+                    className="flex-1 border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400 placeholder:text-gray-300"
+                  />
+                  <button
+                    onClick={() => {
+                      if (imageUrl) {
+                        setLocalImages(prev => [...prev, imageUrl]);
+                        setImageUrl('');
+                        setShowUrlInput(false);
+                      }
+                    }}
+                    className="px-3 py-2 bg-[#8B2635] text-white text-sm rounded-md hover:bg-[#7a1f2d] cursor-pointer"
+                  >
+                    Add
+                  </button>
+                </div>
               </div>
-              <button className="w-16 h-16 rounded-md border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-gray-300 cursor-pointer">
+            )}
+
+            <div className="flex flex-wrap gap-3">
+              {localImages.map((img, index) => (
+                <div key={index} className="relative w-16 h-16 rounded-md bg-gray-100 overflow-hidden group">
+                  <img src={img} alt={`preview-${index}`} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => setLocalImages(prev => prev.filter((_, i) => i !== index))}
+                    className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex cursor-pointer"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={() => document.getElementById('file-upload')?.click()}
+                className="w-16 h-16 rounded-md border border-dashed border-gray-200 flex items-center justify-center hover:border-gray-300 cursor-pointer"
+              >
                 <span className="text-gray-400 text-xl">+</span>
               </button>
             </div>
           </div>
+
+          {/* PRICING */}
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-5">Pricing</h2>
-            <div className="flex items-center border border-gray-200 rounded-md overflow-hidden focus-within:border-gray-400">
-              <span className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-r border-gray-200">$</span>
-              <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="0.00" className="flex-1 px-3 py-2 text-sm outline-none" />
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Price</label>
+              <div className="flex items-center border border-gray-200 rounded-md overflow-hidden focus-within:border-gray-400">
+                <span className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-r border-gray-200">$</span>
+                <input
+                  type="number"
+                  value={price}
+                  onChange={e => setPrice(e.target.value)}
+                  placeholder="0.00"
+                  className="flex-1 px-3 py-2 text-sm outline-none"
+                />
+              </div>
+              <label className="flex items-center gap-2 mt-3 cursor-pointer">
+                <input type="checkbox" className="w-3.5 h-3.5 accent-[#8B2635]" />
+                <span className="text-xs text-gray-500">Charge tax on this product</span>
+              </label>
             </div>
-            <label className="flex items-center gap-2 mt-3 cursor-pointer">
-              <input type="checkbox" className="w-3.5 h-3.5 accent-[#8B2635]" />
-              <span className="text-xs text-gray-500">Charge tax on this product</span>
-            </label>
           </div>
+
         </div>
+
+        {/* RIGHT COLUMN */}
         <div className="w-64 flex flex-col gap-5">
+
+          {/* PRODUCT STATUS */}
           <div className="bg-white border border-gray-200 rounded-lg p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">Product Status</h3>
-            {['Active', 'Draft', 'Archived'].map(s => (
+            {['published', 'draft', 'archived'].map(s => (
               <label key={s} className="flex items-center gap-2.5 cursor-pointer mb-2">
-                <input type="radio" name="status" value={s} checked={status === s} onChange={() => setStatus(s)} className="accent-[#8B2635]" />
-                <span className={'text-sm ' + (status === s ? 'text-[#8B2635] font-medium' : 'text-gray-600')}>{s}</span>
+                <input
+                  type="radio"
+                  name="status"
+                  value={s}
+                  checked={status === s}
+                  onChange={() => setStatus(s)}
+                  className="accent-[#8B2635]"
+                />
+                <span className={`text-sm capitalize ${status === s ? 'text-[#8B2635] font-medium' : 'text-gray-600'}`}>
+                  {s === 'published' ? 'Active' : s.charAt(0).toUpperCase() + s.slice(1)}
+                </span>
               </label>
             ))}
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={e => setIsActive(e.target.checked)}
+                  className="w-3.5 h-3.5 accent-[#8B2635]"
+                />
+                <span className="text-xs text-gray-600">Visible on landing page</span>
+              </label>
+            </div>
           </div>
+
+          {/* PRODUCT ORGANIZATION */}
           <div className="bg-white border border-gray-200 rounded-lg p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">Product Organization</h3>
             <div className="mb-4">
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Category</label>
-              <select value={category} onChange={e => setCategory(e.target.value)} className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600 outline-none">
+              <select
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600 outline-none"
+              >
                 <option value="">Select Category</option>
                 <option value="ceramics">Ceramics</option>
                 <option value="textiles">Textiles</option>
@@ -110,31 +365,64 @@ export default function AddProduct() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Tags</label>
-              <input type="text" placeholder="e.g. Minimal, Handcrafted" value={tags} onChange={e => setTags(e.target.value)} className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none placeholder:text-gray-300" />
+              <input
+                type="text"
+                placeholder="Minimal, Handcrafted"
+                value={tags}
+                onChange={e => setTags(e.target.value)}
+                className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none placeholder:text-gray-300"
+              />
+              <p className="text-xs text-gray-400 mt-1">Separate with commas</p>
             </div>
           </div>
+
+          {/* SEO */}
           <div className="bg-white border border-gray-200 rounded-lg p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">Search Engine Optimization</h3>
             <div className="mb-4">
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Page Title</label>
-              <input type="text" placeholder="Title for search engines" value={pageTitle} onChange={e => setPageTitle(e.target.value)} className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none placeholder:text-gray-300" />
+              <input
+                type="text"
+                placeholder="Title for search engines"
+                value={pageTitle}
+                onChange={e => setPageTitle(e.target.value)}
+                className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none placeholder:text-gray-300"
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Meta Description</label>
-              <textarea placeholder="Description for search engines..." value={metaDesc} onChange={e => setMetaDesc(e.target.value)} rows={3} className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none placeholder:text-gray-300 resize-none" />
+              <textarea
+                placeholder="Description for search engines..."
+                value={metaDesc}
+                onChange={e => setMetaDesc(e.target.value)}
+                rows={3}
+                className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none placeholder:text-gray-300 resize-none"
+              />
             </div>
           </div>
+
+          {/* SHIPPING */}
           <div className="bg-white border border-gray-200 rounded-lg p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">Shipping</h3>
             <div className="mb-4">
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Weight (kg)</label>
-              <input type="number" value={weight} onChange={e => setWeight(e.target.value)} className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none" />
+              <input
+                type="number"
+                value={weight}
+                onChange={e => setWeight(e.target.value)}
+                className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none"
+              />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Customs Information (HS Code)</label>
-              <input type="text" placeholder="Search by product type..." className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none placeholder:text-gray-300" />
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Customs Information</label>
+              <input
+                type="text"
+                placeholder="Search by product type..."
+                className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none placeholder:text-gray-300"
+              />
             </div>
           </div>
+
         </div>
       </div>
     </DashboardLayout>

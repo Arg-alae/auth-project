@@ -15,3 +15,21 @@ model User {
   refreshToken String?
   createdAt    DateTime @default(now())
 }
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  price       Float?
+  imageUrl    String?
+  images      String[]
+  sku         String?  @unique
+  stock       Int      @default(0)
+  status      String   @default("draft")
+  isActive    Boolean  @default(false)
+  category    String?
+  tags        String[]
+  weight      Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

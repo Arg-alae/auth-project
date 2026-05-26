@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import AuthLayout from '../components/AuthLayout';
-import AuthInput from '../components/AuthInput';
-import AuthButton from '../components/AuthButton';
-import registerBg from '../assets/register-bg.png';
+import { useAuth } from '../../hooks/useAuth';
+import AuthLayout from '../../components/common/AuthLayout';
+import AuthInput from '../../components/common/AuthInput';
+import AuthButton from '../../components/common/AuthButton';
+import registerBg from '../../assets/images/register-bg.png';
 
 export default function Register() {
   const [name, setName] = useState('');

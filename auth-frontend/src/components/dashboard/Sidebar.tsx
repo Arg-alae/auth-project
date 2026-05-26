@@ -1,6 +1,6 @@
 ﻿import { Link, useLocation } from 'react-router-dom';
-import logo from '../../assets/logo_morazon.png';
-import adminImg from '../../assets/Morazon Admin Profile.png';
+import logo from '../../assets/images/logo_morazon.png';
+import adminImg from '../../assets/images/Morazon Admin Profile.png';
 
 const menuItems = [
   { label: 'Dashboard', path: '/dashboard', icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>' },

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import AuthLayout from '../components/AuthLayout';
-import AuthInput from '../components/AuthInput';
-import AuthButton from '../components/AuthButton';
-import loginBg from '../assets/login.png';
+import { useAuth } from '../../hooks/useAuth';
+import AuthLayout from '../../components/common/AuthLayout';
+import AuthInput from '../../components/common/AuthInput';
+import AuthButton from '../../components/common/AuthButton';
+import loginBg from '../../assets/images/login.png';
 
 export default function Login() {
   const [email, setEmail] = useState('');

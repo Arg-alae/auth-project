@@ -6,7 +6,7 @@ import type { Product } from '../../services/productApi';
 import toast from 'react-hot-toast';
 
 const tabs = ['ALL PRODUCTS', 'PUBLISHED', 'DRAFT', 'HIDDEN'];
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 6;
 
 export default function Products() {
   const [activeTab, setActiveTab] = useState('ALL PRODUCTS');

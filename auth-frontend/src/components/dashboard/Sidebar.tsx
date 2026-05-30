@@ -1,6 +1,5 @@
 ﻿import { Link, useLocation } from 'react-router-dom';
 import logo from '../../assets/images/logo_morazon.png';
-import adminImg from '../../assets/images/Morazon Admin Profile.png';
 
 const menuItems = [
   { label: 'Dashboard', path: '/dashboard', icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>' },
@@ -59,7 +58,9 @@ export default function Sidebar() {
 
       {/* ADMIN USER */}
       <div className="px-5 py-4 border-t border-gray-100 flex items-center gap-3">
-        <img src={adminImg} alt="Admin" className="w-8 h-8 rounded-full object-cover" />
+        <div className="w-8 h-8 rounded-full bg-[#8B2635] flex items-center justify-center flex-shrink-0">
+          <span className="text-white text-sm font-semibold">A</span>
+        </div>
         <span className="text-sm text-gray-700 font-medium">Admin User</span>
       </div>
 

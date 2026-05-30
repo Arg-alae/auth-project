@@ -6,24 +6,31 @@ import type { Product } from '../../services/productApi';
 import toast from 'react-hot-toast';
 
 const tabs = ['ALL PRODUCTS', 'PUBLISHED', 'DRAFT', 'HIDDEN'];
+const ITEMS_PER_PAGE = 10;
 
 export default function Products() {
   const [activeTab, setActiveTab] = useState('ALL PRODUCTS');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, activeTab]);
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const data = await getAllProducts();
       setProducts(data);
-    } catch (error) {
+    } catch {
       toast.error('Failed to load products');
     } finally {
       setLoading(false);
@@ -36,7 +43,7 @@ export default function Products() {
       await deleteProduct(id);
       toast.success('Product deleted');
       fetchProducts();
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete product');
     }
   };
@@ -55,21 +62,44 @@ export default function Products() {
 
   const filteredProducts = products
     .filter(p => {
-      if (activeTab === 'ALL PRODUCTS') return true;
       if (activeTab === 'PUBLISHED') return p.status === 'published';
       if (activeTab === 'DRAFT') return p.status === 'draft';
       if (activeTab === 'HIDDEN') return !p.isActive;
       return true;
     })
+    .filter(p => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (
+        p.title.toLowerCase().includes(q) ||
+        (p.sku?.toLowerCase().includes(q)) ||
+        (p.category?.toLowerCase().includes(q))
+      );
+    })
     .sort((a, b) => {
-      if (sortOrder === 'newest') {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
+      if (sortOrder === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
 
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const start = Math.max(1, currentPage - 2);
+    const end = Math.min(totalPages, currentPage + 2);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  };
+
   return (
-    <DashboardLayout>
+    <DashboardLayout
+      searchPlaceholder="Search products..."
+      onSearchChange={(val) => { setSearch(val); setCurrentPage(1); }}
+    >
       <div>
 
         {/* HEADER */}
@@ -118,8 +148,6 @@ export default function Products() {
 
         {/* TABLE */}
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-
-          {/* TABLE HEADER */}
           <div className="grid grid-cols-[1fr_150px_120px_80px] px-6 py-3 bg-gray-50 border-b border-gray-200">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Product</span>
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</span>
@@ -127,29 +155,23 @@ export default function Products() {
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</span>
           </div>
 
-          {/* LOADING */}
           {loading && (
-            <div className="px-6 py-8 text-center text-sm text-gray-400">
-              Loading products...
-            </div>
+            <div className="px-6 py-8 text-center text-sm text-gray-400">Loading products...</div>
           )}
 
-          {/* EMPTY */}
           {!loading && filteredProducts.length === 0 && (
             <div className="px-6 py-8 text-center text-sm text-gray-400">
-              No products found
+              {search ? `No products found for "${search}"` : 'No products found'}
             </div>
           )}
 
-          {/* TABLE ROWS */}
-          {!loading && filteredProducts.map((product, index) => (
+          {!loading && paginatedProducts.map((product, index) => (
             <div
               key={product.id}
               className={`grid grid-cols-[1fr_150px_120px_80px] px-6 py-4 items-center ${
-                index !== filteredProducts.length - 1 ? 'border-b border-gray-100' : ''
+                index !== paginatedProducts.length - 1 ? 'border-b border-gray-100' : ''
               }`}
             >
-              {/* PRODUCT */}
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-md bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
                   {product.imageUrl ? (
@@ -168,25 +190,20 @@ export default function Products() {
                 </div>
               </div>
 
-              {/* STATUS */}
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
                   <div className={`w-1.5 h-1.5 rounded-full ${getStatusDot(product.status)}`} />
-                  <span className="text-xs text-gray-600">
-                    {getStatusLabel(product.status, product.stock)}
-                  </span>
+                  <span className="text-xs text-gray-600">{getStatusLabel(product.status, product.stock)}</span>
                 </div>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
                   {product.isActive ? 'PUBLIC' : 'HIDDEN'}
                 </span>
               </div>
 
-              {/* PRICE */}
               <span className="text-sm text-gray-900 font-medium">
                 {product.price ? `$${product.price.toFixed(2)}` : '--'}
               </span>
 
-              {/* ACTIONS */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => navigate(`/dashboard/products/edit/${product.id}`)}
@@ -214,19 +231,46 @@ export default function Products() {
         </div>
 
         {/* PAGINATION */}
-        <div className="flex items-center justify-between mt-4">
-          <span className="text-xs text-gray-500">
-            Showing {filteredProducts.length} products
-          </span>
-          <div className="flex items-center gap-2">
-            <button className="text-sm text-gray-600 border border-gray-200 rounded px-3 py-1.5 hover:bg-gray-50 cursor-pointer">
-              Previous
-            </button>
-            <button className="text-sm text-gray-600 border border-gray-200 rounded px-3 py-1.5 hover:bg-gray-50 cursor-pointer">
-              Next
-            </button>
+        {!loading && totalPages > 0 && (
+          <div className="flex items-center justify-between mt-4">
+            <span className="text-xs text-gray-500">
+              Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredProducts.length)}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} products
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="w-8 h-8 flex items-center justify-center text-xs text-gray-500 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              >«</button>
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="w-8 h-8 flex items-center justify-center text-xs text-gray-500 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              >‹</button>
+              {getPageNumbers().map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 flex items-center justify-center text-xs rounded border cursor-pointer ${
+                    page === currentPage
+                      ? 'bg-[#8B2635] text-white border-[#8B2635]'
+                      : 'text-gray-500 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >{page}</button>
+              ))}
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="w-8 h-8 flex items-center justify-center text-xs text-gray-500 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              >›</button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="w-8 h-8 flex items-center justify-center text-xs text-gray-500 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              >»</button>
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </DashboardLayout>

@@ -8,12 +8,17 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  name         String
-  email        String   @unique
-  password     String
-  refreshToken String?
-  createdAt    DateTime @default(now())
+  id                Int       @id @default(autoincrement())
+  name              String
+  email             String    @unique
+  password          String
+  refreshToken      String?
+  isVerified        Boolean   @default(false)
+  verificationToken String?
+  resetToken        String?    // ← token de réinitialisation
+  resetTokenExpiry  DateTime?  // ← expiration du token (1 heure)
+  createdAt         DateTime  @default(now())
+  products          Product[]
 }
 
 model Product {
@@ -32,4 +37,6 @@ model Product {
   weight      Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

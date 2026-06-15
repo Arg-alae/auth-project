@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
-import type { AuthResponse, LoginData, RegisterData } from '../types/auth.types';
+import type { LoginData, RegisterData } from '../types/auth.types';
 
 export function useAuth() {
   const [loading, setLoading] = useState(false);
@@ -9,7 +9,7 @@ export function useAuth() {
   const login = async (data: LoginData) => {
     setLoading(true);
     try {
-      const res = await api.post<AuthResponse>('/auth/login', data);
+      const res = await api.post('/auth/login', data);
       localStorage.setItem('access_token', res.data.access_token);
       localStorage.setItem('refresh_token', res.data.refresh_token);
       toast.success('Connecté avec succès !');
@@ -17,6 +17,7 @@ export function useAuth() {
         window.location.href = '/dashboard';
       }, 1000);
     } catch (err: any) {
+      console.log('Error response:', err.response?.data);
       toast.error(err.response?.data?.message || 'Erreur de connexion');
     } finally {
       setLoading(false);
@@ -26,13 +27,9 @@ export function useAuth() {
   const register = async (data: RegisterData) => {
     setLoading(true);
     try {
-      const res = await api.post<AuthResponse>('/auth/register', data);
-      localStorage.setItem('access_token', res.data.access_token);
-      localStorage.setItem('refresh_token', res.data.refresh_token);
-      toast.success('Compte créé avec succès !');
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 1000);
+      await api.post('/auth/register', data);
+      toast.success('Compte créé ! Vérifiez votre email.');
+      window.location.href = '/check-email';
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Erreur d inscription');
     } finally {

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Req, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -6,23 +6,40 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @ApiTags('Authentication')
-// groupe toutes les routes sous le titre "Authentication" dans Swagger
-
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @ApiOperation({ summary: 'Créer un nouveau compte' })
-  // description de la route dans Swagger
-
   @ApiResponse({ status: 201, description: 'Compte créé avec succès' })
   @ApiResponse({ status: 400, description: 'Données invalides' })
   @ApiResponse({ status: 409, description: 'Email déjà utilisé' })
-  // les réponses possibles affichées dans Swagger
-
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
+  }
+
+  @ApiOperation({ summary: 'Vérifier l email avec le token' })
+  @ApiResponse({ status: 200, description: 'Email vérifié avec succès' })
+  @ApiResponse({ status: 400, description: 'Token invalide ou expiré' })
+  @Get('verify-email/:token')
+  verifyEmail(@Param('token') token: string) {
+    return this.authService.verifyEmail(token);
+  }
+
+  @ApiOperation({ summary: 'Demander la réinitialisation du mot de passe' })
+  @ApiResponse({ status: 200, description: 'Email envoyé si le compte existe' })
+  @Post('forgot-password')
+  forgotPassword(@Body() body: { email: string }) {
+    return this.authService.forgotPassword(body.email);
+  }
+
+  @ApiOperation({ summary: 'Réinitialiser le mot de passe' })
+  @ApiResponse({ status: 200, description: 'Mot de passe réinitialisé' })
+  @ApiResponse({ status: 400, description: 'Token invalide ou expiré' })
+  @Post('reset-password')
+  resetPassword(@Body() body: { token: string; newPassword: string }) {
+    return this.authService.resetPassword(body.token, body.newPassword);
   }
 
   @ApiOperation({ summary: 'Se connecter' })
@@ -34,9 +51,6 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
-  // indique que cette route nécessite un token Bearer
-  // ajoute un cadenas dans Swagger
-
   @ApiOperation({ summary: 'Voir le profil de l utilisateur connecté' })
   @ApiResponse({ status: 200, description: 'Profil retourné avec succès' })
   @ApiResponse({ status: 401, description: 'Non autorisé' })

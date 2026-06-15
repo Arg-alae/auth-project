@@ -1,5 +1,6 @@
 ﻿import { Link, useLocation } from 'react-router-dom';
 import logo from '../../assets/images/logo_morazon.png';
+import { useAuth } from '../../hooks/useAuth';
 
 const menuItems = [
   { label: 'Dashboard', path: '/dashboard', icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>' },
@@ -12,6 +13,7 @@ const menuItems = [
 
 export default function Sidebar() {
   const location = useLocation();
+  const { logout } = useAuth();
 
   return (
     <div className="w-[180px] min-h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 bottom-0 z-20">
@@ -56,12 +58,25 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* ADMIN USER */}
-      <div className="px-5 py-4 border-t border-gray-100 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-[#8B2635] flex items-center justify-center flex-shrink-0">
-          <span className="text-white text-sm font-semibold">A</span>
+      {/* ADMIN USER + LOGOUT */}
+      <div className="px-5 py-4 border-t border-gray-100">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-8 h-8 rounded-full bg-[#8B2635] flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-sm font-semibold">A</span>
+          </div>
+          <span className="text-sm text-gray-700 font-medium">Admin User</span>
         </div>
-        <span className="text-sm text-gray-700 font-medium">Admin User</span>
+        <button
+          onClick={logout}
+          className="flex items-center gap-2 text-xs text-gray-400 hover:text-red-500 transition-colors cursor-pointer w-full"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Logout
+        </button>
       </div>
 
     </div>
